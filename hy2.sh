@@ -36,7 +36,8 @@ done
 
 # دریافت پسورد
 while true; do
-    read -rp "Password: " PASSWORD
+    read -rsp "Password: " PASSWORD
+    echo
 
     if [[ -n "$PASSWORD" ]]; then
         break
@@ -149,7 +150,7 @@ openssl req -x509 \
 
 chmod 600 "$INSTALL_DIR/server.key"
 
-# ساخت کانفیگ سرور
+# ساخت کانفیگ Hysteria
 echo -e "${YELLOW}در حال ساخت config...${NC}"
 
 cat > "$INSTALL_DIR/config.yaml" <<EOF
@@ -162,6 +163,11 @@ tls:
 auth:
   type: password
   password: $PASSWORD
+
+obfs:
+  type: salamander
+  salamander:
+    password: $PASSWORD
 
 masquerade:
   type: proxy
@@ -203,13 +209,14 @@ fi
 
 # تنظیم UFW در صورت فعال بودن
 if command -v ufw &> /dev/null; then
-
     if ufw status | grep -q "Status: active"; then
         echo -e "${YELLOW}باز کردن پورت UDP...${NC}"
         ufw allow "$PORT/udp"
     fi
-
 fi
+
+# ساخت کانفیگ کلاینت
+HY2_CONFIG="hysteria2://${PASSWORD}@${SERVER_IP}:${PORT}/?insecure=1&obfs=salamander&obfs-password=${PASSWORD}&sni=google.com#Hy2"
 
 echo
 echo -e "${GREEN}========================================${NC}"
@@ -219,10 +226,8 @@ echo
 
 echo -e "${YELLOW}HY2 CONFIG:${NC}"
 echo
-
-echo "hysteria2://$PASSWORD@$SERVER_IP:$PORT/?insecure=1&sni=$SERVER_IP#HY2-$SERVER_IP"
-
+echo "$HY2_CONFIG"
 echo
-echo -e "${GREEN}Service Status:${NC}"
 
+echo -e "${GREEN}Service Status:${NC}"
 systemctl status "$SERVICE_NAME.service" --no-pager
